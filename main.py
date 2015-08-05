@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import re
 import sys
 import json
 import os.path
@@ -21,6 +22,10 @@ VNUKOVO_URL = 'http://www.meteorad.ru/data/UVKVnukovo.png'
 PROFSOUZ_URL = 'http://www.meteorad.ru/data/UVKProfsoyuz.png'
 VNUKOVO_DIR = 'vnukovo'
 PROFSOUZ_DIR = 'profsouz'
+VIZ = 'viz'
+TILES = os.path.join(VIZ, 'tiles')
+TILES_LIST = os.path.join(VIZ, 'tiles.json')
+
 
 BACKGROUND = 'background'
 COLORS = OrderedDict([
@@ -202,6 +207,26 @@ def make_reference_tile(mask, output):
     refence[mask] = (0, 0, 0, 200)
     refence[~mask] = (255, 255, 255, 0)
     io.imsave(output, refence)
+
+
+def make_tiles(inputs, dir=TILES):
+    for path in inputs:
+        print >>sys.stderr, path
+        filename = os.path.basename(path)
+        make_tile(path, os.path.join(dir, filename))
+
+
+def dump_tiles_list(dir=TILES, output=TILES_LIST):
+    list = {}
+    for filename in os.listdir(dir):
+        match = re.search('(\d\d\d\d-\d\d-\d\dT\d\d:\d\d)', filename)
+        if match:
+            timestamp = match.group(1)
+            base = os.path.relpath(TILES, VIZ)
+            path = os.path.join(base, filename)
+            list[timestamp] = path
+    with open(output, 'w') as file:
+        json.dump(list, file)
 
 
 if __name__ == '__main__':
