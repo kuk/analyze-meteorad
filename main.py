@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import json
 import os.path
 import datetime
 import time
@@ -118,11 +119,22 @@ def expand_background(background):
     return background
 
 
-def join_split(split, colors=COLORS):
+def join_split(split, colors=COLORS, tile=False):
     height, width = split[BACKGROUND].shape
-    image = np.zeros((height, width, 3), dtype=np.uint8)
-    for name, layer in split.iteritems():
-        image[layer] = colors[name]
+    if tile:
+        image = np.zeros((height, width, 4), dtype=np.uint8)
+        for name, layer in split.iteritems():
+            red, green, blue = colors[name]
+            if name == BACKGROUND:
+                opacity = 0
+            else:
+                opacity = 150
+            image[layer] = (red, green, blue, opacity)
+    else:
+        image = np.zeros((height, width, 3), dtype=np.uint8)
+        for name, layer in split.iteritems():
+            image[layer] = colors[name]
+
     return image
 
 
@@ -173,7 +185,23 @@ def get_bad_weather_images():
             if (start <= _ <= stop)]
 
 
+def make_tile(input, output):
+    image = io.imread(input)
+    roi = get_roi(image)
+    split = OrderedDict(split_colors(roi))
+    split[BACKGROUND] = expand_background(split[BACKGROUND])
+    guess = guess_unknown(split)
+    unknown = get_unknown(split)
+    restored = join_split(guess, tile=True)
+    io.imsave(output, restored)
 
+
+def make_reference_tile(mask, output):
+    height, width = mask.shape[:2]
+    refence = np.zeros((height, width, 4), dtype=np.uint8)
+    refence[mask] = (0, 0, 0, 200)
+    refence[~mask] = (255, 255, 255, 0)
+    io.imsave(output, refence)
 
 
 if __name__ == '__main__':
