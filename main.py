@@ -12,9 +12,10 @@ from collections import OrderedDict
 import requests
 requests.packages.urllib3.disable_warnings()
 
-from skimage import io, draw, morphology, filters, color
+from skimage import io, draw, morphology, filters, color, img_as_ubyte
 import numpy as np
 from matplotlib import pyplot as plt
+from moviepy import editor as mpy
 
 
 IMAGES = 'images'
@@ -174,11 +175,23 @@ def guess_unknown(split, radius=9):
     return guess
 
 
-def overlay_mask(image, mask):
+def overlay_mask(image, mask, alpha=0.9):
+    assert alpha <= 1.0
     hsv = color.rgb2hsv(image)
-    hsv[mask, 2] *= 0.9
+    hsv[mask, 2] *= alpha
     overlay = color.hsv2rgb(hsv)
     return overlay
+
+
+def build_animation(overlay_mask, duration=3, fps=5, path='animation.gif'):
+    def make_frame(time, overlay_mask=overlay_mask, duration=duration, fps=fps):
+        alpha = time / (duration - 1.0 / fps)
+        if alpha > 1.0:
+            alpha = 1.0
+        image = overlay_mask(alpha)
+        return img_as_ubyte(image)
+    clip = mpy.VideoClip(make_frame, duration=duration)
+    clip.write_gif(path, fps=fps)
 
 
 def get_bad_weather_images():
