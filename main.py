@@ -73,6 +73,7 @@ def monitor(timeout=10 * 60):
     while True:
         url = VNUKOVO_URL
         path = get_path(dir=VNUKOVO_DIR)
+        path = path.replace(':', '_') # если юзаешь винду
         print >>sys.stderr, url, '->', path
         download_image(url, path)
         
